@@ -239,7 +239,7 @@
 				delete this[$iterable][hookName];
 			}
 		}
-		static yieldIterable(hookName){
+		static *yieldIterable(hookName){
 			if(!(hookName in this[$iterable])){
 				return;
 			}
