@@ -280,7 +280,7 @@
 					callback(node, ...args);
 				}
 			}
-			return fragment;
+			return node;
 		}
 	};
 })(globalThis, Symbol("action"), Symbol("filter"), Symbol("async"), Symbol("iterable"), Symbol("content"), Symbol("parser"));
