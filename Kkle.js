@@ -97,7 +97,7 @@
 		}
 	};
 })(globalThis, Symbol("records"), Symbol("constructor"));
-(function($, $action, $filter, $async, $iterable, $content, $parser){
+(function($, $action, $filter, $async, $iterable, $content, $parser, $attrSet, $attrMap){
 	$.Kkle = class{
 		static [$action] = {};
 		static [$filter] = {};
@@ -105,6 +105,8 @@
 		static [$iterable] = {};
 		static [$content] = {};
 		static [$parser] = new DOMParser();
+		static [$attrSet] = [];
+		static [$attrMap] = {};
 		static invoke = Symbol("invoke");
 		static addAction(hookName, callback, priority){
 			if(!(hookName in this[$action])){
@@ -282,5 +284,67 @@
 			}
 			return node;
 		}
+		static attr(name){
+			let i = null;
+			if(name in this[$attrMap]){
+				i = this[$attrMap][name];
+			}else{
+				i = this[$attrMap][name] = this[$attrSet].length;
+				this[$attrSet].push(name);
+			}
+			return `data-kkle="${i}"`;
+		}
+		static adjustElement(element, value, input = false){
+			if(typeof value == "string"){
+				if(input){
+					element.value = value;
+				}else{
+					element.textContent = value;
+				}
+			}else if(value instanceof Node){
+				if(!input){
+					element.innerHTML = "";
+					element.appendChild(value);
+				}
+			}else if(Array.isArray(value)){
+				if(!input){
+					element.innerHTML = "";
+					element.append(...value);
+				}
+			}else if(typeof value == "object"){
+				for(let key in value){
+					if(key == "value"){
+						this.adjustElement(element, value[key], input);
+					}else if(key.startsWith("@")){
+						element.setAttribute(key.slice(1), value[key]);
+					}else if(key.startsWith("+")){
+						const types = key.slice(1).split(" ");
+						for(let type of types){
+							element.addEventListener(listener, value[key]);
+						}
+					}else if(key.startsWith("-")){
+						const types = key.slice(1).split(" ");
+						for(let type of types){
+							element.removeEventListener(listener, value[key]);
+						}
+					}else{
+						element[key] = value[key];
+					}
+				}
+			}
+		}
+		static assignElements(node, values){
+			const input = new Set([HTMLInputElement, HTMLTextAreaElement, HTMLSelectElement]);
+			return Object.fromEntries(Array.from(node.querySelectorAll('[data-kkle]'), element => {
+				const i = Number(element.getAttribute("data-kkle"));
+				const name = this[$attrSet][i];
+				element.removeAttribute("data-kkle");
+				if(name in values){
+					const value = values[name];
+					this.adjustElement(element, value, input.has(element.constructor));
+				}
+				return [name, element];
+			}));
+		}
 	};
-})(globalThis, Symbol("action"), Symbol("filter"), Symbol("async"), Symbol("iterable"), Symbol("content"), Symbol("parser"));
+})(globalThis, Symbol("action"), Symbol("filter"), Symbol("async"), Symbol("iterable"), Symbol("content"), Symbol("parser"), Symbol("attrSet"), Symbol("attrMap"));
